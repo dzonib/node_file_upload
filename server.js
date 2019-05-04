@@ -1,6 +1,8 @@
 const express = require('express')
 const multer = require('multer')
 
+const sequelize = require('./db/db')
+
 const app = express()
 
 app.use(express.json())
@@ -18,7 +20,7 @@ const upload = multer({
         // code runs only when file is not pdf format
 
         // if (!file.originalname.endsWith('.pdf')) {
-            // if something goes wrong we call callback(cb) with error
+        // if something goes wrong we call callback(cb) with error
         //     return cb(new Error('File must be a PDF'))
         // }
 
@@ -34,13 +36,41 @@ const upload = multer({
     }
 })
 
+// Make error middleware
+// const errorMiddleware = (req, res, next) => {
+//     throw new Error('From my middleware')
+// }
+
+// handle error example
+// app.post(
+//     '/upload',
+//     errorMiddleware,
+//     (req, res) => {
+//         res.send()
+//     },
+// another func for error handling (must provide all args)
+//     (err, req, res, next) => {
+//         res.status(400).send({ error: err.message })
+//     }
+// )
+
 // use upload middleware which takes single argument (name of upload)
-app.post('/upload', upload.single('upload'), (req, res) => {
-    res.send()
-})
+app.post(
+    '/upload',
+    upload.single('upload'),
+    (req, res) => {
+        res.send()
+    },
+// another func for error handling (must provide all args)
+    (err, req, res, next) => {
+        res.status(400).send({ error: err.message })
+    }
+)
 
 app.use('/api/users', require('./routes/user'))
 
-app.listen(port, () => {
-    console.log(`App running on http://localhost:${port}`)
+sequelize.sync().then(() => {
+    app.listen(port, () => {
+        console.log(`App running on http://localhost:${port}`)
+    })
 })
