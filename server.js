@@ -67,6 +67,10 @@ app.post(
     }
 )
 
+app.get('/', (req, res) => {
+    res.send('its alive')
+})
+
 app.use('/api/users', require('./routes/user'))
 
 sequelize.sync().then(() => {

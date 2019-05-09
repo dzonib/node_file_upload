@@ -1,8 +1,9 @@
 const express = require('express')
 const multer = require('multer')
+const sharp = require('sharp')
 const jwt = require('jsonwebtoken')
 
-const auth = require("../middleware/auth")
+const auth = require('../middleware/auth')
 const User = require('../db/models/User')
 
 const router = express.Router()
@@ -30,9 +31,9 @@ router.post('/login', async (req, res) => {
     res.json(`Bearer ${token}`)
 })
 
-router.get("/protected", auth ,(req, res, next) => {
+router.get('/protected', auth, (req, res, next) => {
     console.log(JSON.stringify(req.user, undefined, 4))
-    res.json("yo")
+    res.json('yo')
 })
 
 const upload = multer({
@@ -56,8 +57,15 @@ router.post(
     auth,
     upload.single('avatar'),
     async (req, res) => {
+        // modify original buffer with sharp
+        const buffer = await sharp(req.file.buffer)
+            .resize({ width: 250, height: 250 })
+            // convert to format
+            .png()
+            // return buffer we can use
+            .toBuffer()
 
-        await req.user.update({avatar: req.file.buffer})
+        await req.user.update({ avatar: buffer })
         res.send()
     },
     (err, req, res, next) => {
@@ -66,9 +74,26 @@ router.post(
 )
 
 // DELETE AVATAR
-router.delete("/avatar", auth, async (req, res, next) => {
-    await req.user.update({avatar: null})
+router.delete('/avatar', auth, async (req, res, next) => {
+    await req.user.update({ avatar: null })
     res.send()
+})
+
+// get your url with image here
+router.get('/:id/avatar', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id)
+
+        if (!user || !user.avatar) {
+            // message from here is sent to e.message in catch
+            throw new Error()
+        }
+
+        res.set('Content-Type', 'image/jpg')
+        res.send(user.avatar)
+    } catch (e) {
+        res.status(404).send()
+    }
 })
 
 module.exports = router
